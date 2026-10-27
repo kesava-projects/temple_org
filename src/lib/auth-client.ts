@@ -1,0 +1,9 @@
+import { createAuthClient } from "better-auth/client";
+import { adminClient, twoFactorClient, phoneNumberClient } from "better-auth/client/plugins";
+
+export const authClient = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  plugins: [adminClient(), twoFactorClient(), phoneNumberClient()],
+});
+
+export const { signIn, signUp, signOut, useSession } = authClient;

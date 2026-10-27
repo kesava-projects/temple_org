@@ -1,0 +1,267 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  ARCHIVED
+}
+
+enum BookingStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+// ==========================================
+// User & Better Auth Models
+// ==========================================
+
+model User {
+  id                  String       @id @default(cuid())
+  email               String       @unique
+  emailVerified       Boolean      @default(false)
+  name                String
+  image               String?
+  phone               String?
+  phoneNumber         String?      @unique
+  phoneNumberVerified Boolean?     @default(false)
+  role                String       @default("USER") // USER | ADMIN
+  isActive            Boolean      @default(true)
+  mfaEnabled          Boolean      @default(false)
+  twoFactorEnabled    Boolean?     @default(false)
+  banned              Boolean?     @default(false)
+  banReason           String?
+  banExpires          DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  sessions            Session[]
+  accounts            Account[]
+  twoFactor           TwoFactor[]
+  staffInvitesSent    StaffInvite[] @relation("StaffInvitedBy")
+  eventsCreated       Event[]       @relation("EventsCreatedBy")
+  bookings            Booking[]
+  auditLogs           AuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@map("user")
+}
+
+model Session {
+  id             String   @id @default(cuid())
+  expiresAt      DateTime
+  token          String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?
+
+  @@index([userId])
+  @@index([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([providerId, accountId])
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id                      String    @id @default(cuid())
+  secret                  String
+  backupCodes             String
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean   @default(false)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+// ==========================================
+// Staff Invite Model
+// ==========================================
+
+model StaffInvite {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  tokenHash   String    @unique
+  invitedById String
+  invitedBy   User      @relation("StaffInvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([email])
+  @@index([tokenHash])
+  @@index([invitedById])
+  @@map("staff_invites")
+}
+
+// ==========================================
+// Event & Schedule Models
+// ==========================================
+
+model Event {
+  id          String          @id @default(cuid())
+  title       String
+  slug        String          @unique
+  description String
+  category    String
+  venue       String
+  images      String[]
+  status      EventStatus     @default(DRAFT)
+  createdById String
+  createdBy   User            @relation("EventsCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  schedules   EventSchedule[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([category])
+  @@index([createdById])
+  @@map("events")
+}
+
+model EventSchedule {
+  id           String        @id @default(cuid())
+  eventId      String
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  startsAt     DateTime
+  endsAt       DateTime
+  capacity     Int
+  priceInPaise Int
+  isBookable   Boolean       @default(true)
+  bookings     Booking[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([eventId])
+  @@index([startsAt])
+  @@index([isBookable])
+  @@map("event_schedules")
+}
+
+// ==========================================
+// Booking & Payment Models
+// ==========================================
+
+model Booking {
+  id           String        @id @default(cuid())
+  scheduleId   String
+  schedule     EventSchedule @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+  userId       String?
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestName    String
+  guestPhone   String
+  guestEmail   String
+  quantity     Int
+  amountInPaise Int
+  status       BookingStatus @default(PENDING)
+  guestToken   String?       @unique // Unguessable token for secure guest access
+  expiresAt    DateTime      // Holds seats until expiresAt (15 mins)
+  payments     Payment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([scheduleId])
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([guestEmail])
+  @@map("bookings")
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  bookingId        String
+  booking          Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  razorpayOrderId  String        @unique
+  razorpayPaymentId String?      @unique
+  signature        String?
+  status           PaymentStatus @default(PENDING)
+  rawPayload       Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([bookingId])
+  @@index([razorpayOrderId])
+  @@index([status])
+  @@map("payments")
+}
+
+// ==========================================
+// Audit Log Model (Append-Only)
+// ==========================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
