@@ -30,7 +30,7 @@ export default async function EventsListPage() {
       },
       orderBy: { createdAt: "desc" },
     });
-  } catch (err) {
+  } catch {
     console.warn("[EventsListPage] Database unavailable during build, using empty list.");
   }
 
