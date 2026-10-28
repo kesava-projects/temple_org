@@ -21,6 +21,7 @@ export function RefundBookingButton({
 }: RefundBookingButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState("");
+  const [totpCode, setTotpCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -33,9 +34,11 @@ export function RefundBookingButton({
 
     setError(null);
     startTransition(async () => {
-      const res = await refundBookingAction(bookingId, reason);
+      const res = await refundBookingAction(bookingId, reason, totpCode.trim() || undefined);
       if (res.success) {
         setIsOpen(false);
+        setReason("");
+        setTotpCode("");
         router.refresh();
       } else {
         setError(res.error || "Failed to process refund");
@@ -86,6 +89,22 @@ export function RefundBookingButton({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 className="text-xs"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="refund-totp" className="text-xs flex justify-between">
+                <span>Admin TOTP Authenticator Code</span>
+                <span className="text-[10px] text-stone-400 font-normal">If 2FA enforced</span>
+              </Label>
+              <Input
+                id="refund-totp"
+                type="text"
+                maxLength={6}
+                placeholder="6-digit code"
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value)}
+                className="font-mono tracking-widest text-xs"
               />
             </div>
 

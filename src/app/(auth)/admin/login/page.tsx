@@ -24,17 +24,17 @@ function AdminLoginForm() {
     return null;
   };
 
-  const handleStaffGoogleSignIn = async () => {
+  const handleStaffSocialSignIn = async (provider: "google" | "microsoft") => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
       await signIn.social({
-        provider: "google",
+        provider,
         callbackURL: "/admin",
       });
     } catch (err) {
       console.error(err);
-      setErrorMsg("Failed to authenticate with Google. Please check your credentials.");
+      setErrorMsg(`Failed to authenticate with ${provider}. Please check your credentials.`);
       setIsLoading(false);
     }
   };
@@ -60,14 +60,14 @@ function AdminLoginForm() {
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <Button
           type="button"
-          onClick={handleStaffGoogleSignIn}
+          onClick={() => handleStaffSocialSignIn("google")}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 bg-stone-100 hover:bg-white text-stone-900 font-medium py-5 shadow-sm"
+          className="w-full flex items-center justify-center gap-3 bg-stone-100 hover:bg-white text-stone-900 font-medium py-5 shadow-sm text-xs"
         >
-          <svg className="h-5 w-5" viewBox="0 0 24 24">
+          <svg className="h-4 w-4" viewBox="0 0 24 24">
             <path
               fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -86,6 +86,21 @@ function AdminLoginForm() {
             />
           </svg>
           <span>Authenticate with Google Staff Account</span>
+        </Button>
+
+        <Button
+          type="button"
+          onClick={() => handleStaffSocialSignIn("microsoft")}
+          disabled={isLoading}
+          className="w-full flex items-center justify-center gap-3 bg-stone-700 hover:bg-stone-600 text-stone-100 font-medium py-5 shadow-sm text-xs"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24">
+            <path fill="#f25022" d="M1 1h10v10H1z" />
+            <path fill="#00a4ef" d="M1 13h10v10H1z" />
+            <path fill="#7fba00" d="M13 1h10v10H13z" />
+            <path fill="#ffb900" d="M13 13h10v10H13z" />
+          </svg>
+          <span>Authenticate with Microsoft Staff Account</span>
         </Button>
       </div>
 

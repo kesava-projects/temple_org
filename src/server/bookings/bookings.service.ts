@@ -8,6 +8,7 @@ import {
 } from "@/schemas/booking";
 import { razorpayService } from "@/server/payments/razorpay";
 import { communications } from "@/server/notifications/communications";
+import { checkRateLimit } from "@/server/security/rate-limiter";
 
 export class BookingServiceError extends Error {
   constructor(
@@ -44,6 +45,16 @@ export const bookingsService = {
     }
 
     const input: BookingCreateInput = parseResult.data;
+
+    // Security Rule 8: Rate limit booking endpoints
+    const rateLimitKey = ip || input.guestEmail || "anonymous-booking";
+    const rl = await checkRateLimit(rateLimitKey, "booking");
+    if (!rl.success) {
+      throw new BookingServiceError(
+        "Too many booking attempts. Please wait a minute before trying again.",
+        "VALIDATION_ERROR"
+      );
+    }
 
     return prisma.$transaction(async (tx) => {
       // 1. Fetch Schedule & Event

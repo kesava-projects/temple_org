@@ -120,6 +120,104 @@ export const communications = {
   },
 
   /**
+   * Dispatches an SMS via MSG91 (e.g. for phone login OTP).
+   */
+  async sendSms(to: string, message: string): Promise<{ success: boolean }> {
+    if (!isMsg91Configured) {
+      console.log(`[MSG91 SMS Simulated] To: ${to} | Message: ${message}`);
+      return { success: true };
+    }
+
+    try {
+      const res = await fetch("https://control.msg91.com/api/v5/otp", {
+        method: "POST",
+        headers: {
+          authkey: msg91AuthKey!,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          template_id: process.env.MSG91_OTP_TEMPLATE_ID,
+          mobile: to.replace("+", ""),
+          authkey: msg91AuthKey,
+          message,
+        }),
+      });
+
+      return { success: res.ok };
+    } catch (error) {
+      console.error("[MSG91 SendSms Error]", error);
+      return { success: false };
+    }
+  },
+
+  /**
+   * Dispatches an invitation email for temple staff members via Resend.
+   */
+  async sendStaffInviteEmail(params: {
+    to: string;
+    inviteUrl: string;
+    invitedByName?: string;
+  }): Promise<{ success: boolean; id?: string }> {
+    const from = process.env.EMAIL_FROM || "Sri Venkateswara Temple <temple@temple.org>";
+    const inviter = params.invitedByName || "Temple Administrator";
+
+    if (!resend) {
+      console.log(
+        `[Resend Staff Invite Email Simulated] To: ${params.to} | Invite URL: ${params.inviteUrl}`
+      );
+      return { success: true, id: `sim_invite_${Date.now()}` };
+    }
+
+    try {
+      const response = await resend.emails.send({
+        from,
+        to: params.to,
+        subject: "Invitation: Staff Administrator Access - Sri Venkateswara Temple",
+        html: `
+          <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #fed7aa; background-color: #fffaf0; border-radius: 12px; color: #431407;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <span style="font-size: 28px; color: #ea580c;">ॐ</span>
+              <h1 style="color: #9a3412; font-size: 22px; margin: 6px 0 0 0;">Sri Venkateswara Temple</h1>
+              <p style="font-size: 13px; color: #c2410c; margin: 0;">Sanatana Dharma Trust • Staff Portal Governance</p>
+            </div>
+
+            <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #ffedd5;">
+              <p style="font-size: 15px; margin-top: 0;">Namaste,</p>
+              <p style="font-size: 14px; line-height: 1.6;">
+                You have been invited by <strong>${inviter}</strong> to join the Sri Venkateswara Temple administration team as an <strong>Administrator / Staff Member</strong>.
+              </p>
+              <p style="font-size: 13px; color: #b45309; background-color: #fef3c7; padding: 10px; border-radius: 6px;">
+                ⚠️ <strong>Important Security Note:</strong> This invitation is single-use and will expire in <strong>48 hours</strong>. It can only be accepted by signing in with a verified email address matching <strong>${params.to}</strong>.
+              </p>
+
+              <div style="text-align: center; margin: 24px 0;">
+                <a href="${params.inviteUrl}" style="background-color: #ea580c; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;">
+                  Accept Staff Invitation & Sign In
+                </a>
+              </div>
+
+              <p style="font-size: 12px; color: #78716c; line-height: 1.5; word-break: break-all;">
+                If the button above does not work, copy and paste this link into your browser:<br/>
+                <a href="${params.inviteUrl}" style="color: #ea580c;">${params.inviteUrl}</a>
+              </p>
+            </div>
+
+            <p style="font-size: 11px; text-align: center; color: #9a3412; margin-top: 20px;">
+              If you did not expect this invitation, please ignore this email or report to the temple sanctum desk.<br/>
+              <em>"Sarve Janah Sukhino Bhavantu"</em>
+            </p>
+          </div>
+        `,
+      });
+
+      return { success: true, id: response.data?.id };
+    } catch (error) {
+      console.error("[Resend Staff Invite Error]", error);
+      return { success: false };
+    }
+  },
+
+  /**
    * Dispatches an SMS confirmation via MSG91.
    */
   async sendBookingConfirmationSms(

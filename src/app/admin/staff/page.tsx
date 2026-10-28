@@ -1,21 +1,25 @@
 import { requireAdmin } from "@/server/auth/guards";
 import { prisma } from "@/lib/prisma";
-import { Button } from "@/components/ui/button";
-import { UserPlus, ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
+import { ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
+import { InviteStaffDialog } from "@/components/admin/invite-staff-dialog";
+import { StaffActionButton } from "@/components/admin/staff-action-button";
 
 export default async function AdminStaffPage() {
-  await requireAdmin();
+  const currentAdmin = await requireAdmin();
 
   const [staffMembers, pendingInvites] = await Promise.all([
     prisma.user.findMany({
       where: { role: "ADMIN" },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ isActive: "desc" }, { createdAt: "asc" }],
     }),
     prisma.staffInvite.findMany({
       where: { usedAt: null },
       orderBy: { createdAt: "desc" },
     }),
   ]);
+
+  const activeAdmins = staffMembers.filter((s) => s.isActive);
+  const isSoleActiveAdmin = activeAdmins.length <= 1;
 
   return (
     <div className="space-y-8">
@@ -28,10 +32,7 @@ export default async function AdminStaffPage() {
             Manage admin users, send secure 48h invitations, and control active status flags.
           </p>
         </div>
-        <Button size="sm" className="bg-amber-700 hover:bg-amber-800 text-white text-xs">
-          <UserPlus className="mr-1.5 h-3.5 w-3.5" />
-          Invite New Staff Member
-        </Button>
+        <InviteStaffDialog />
       </div>
 
       {/* Rules Banner */}
@@ -48,7 +49,7 @@ export default async function AdminStaffPage() {
       {/* Active Staff Table */}
       <div className="space-y-3">
         <h2 className="font-serif font-bold text-base text-stone-900">
-          Active Administrative Staff ({staffMembers.length})
+          Administrative Staff ({staffMembers.length})
         </h2>
         <div className="rounded-xl border border-amber-900/10 bg-white overflow-hidden shadow-xs">
           <table className="w-full text-left text-xs">
@@ -65,7 +66,19 @@ export default async function AdminStaffPage() {
               {staffMembers.map((staff) => (
                 <tr key={staff.id} className="hover:bg-amber-50/20 transition-colors">
                   <td className="p-4 font-semibold text-stone-900">
-                    {staff.name}
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-amber-800 font-bold text-[11px]">
+                        {staff.name.slice(0, 1).toUpperCase()}
+                      </div>
+                      <div>
+                        <span>{staff.name}</span>
+                        {staff.id === currentAdmin.id && (
+                          <span className="ml-1.5 px-1.5 py-0.2 rounded-md bg-stone-100 text-stone-600 text-[10px] font-normal">
+                            You
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td className="p-4 font-mono text-stone-600">
                     {staff.email}
@@ -91,14 +104,14 @@ export default async function AdminStaffPage() {
                     )}
                   </td>
                   <td className="p-4 text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={staffMembers.length <= 1 && staff.isActive}
-                      className="h-7 text-[11px]"
-                    >
-                      {staff.isActive ? "Deactivate" : "Activate"}
-                    </Button>
+                    <StaffActionButton
+                      staffId={staff.id}
+                      staffName={staff.name}
+                      staffEmail={staff.email}
+                      isActive={staff.isActive}
+                      isSoleAdmin={isSoleActiveAdmin && staff.isActive}
+                      currentUserIsTarget={staff.id === currentAdmin.id}
+                    />
                   </td>
                 </tr>
               ))}
@@ -125,23 +138,32 @@ export default async function AdminStaffPage() {
               {pendingInvites.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="p-6 text-center text-stone-400">
-                    No pending invitations.
+                    No pending invitations. All invitations have been claimed or expired.
                   </td>
                 </tr>
               ) : (
-                pendingInvites.map((inv) => (
-                  <tr key={inv.id}>
-                    <td className="p-4 font-mono text-stone-800">{inv.email}</td>
-                    <td className="p-4 text-stone-500">
-                      {new Date(inv.expiresAt).toLocaleString("en-IN")}
-                    </td>
-                    <td className="p-4 text-right">
-                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
-                        PENDING ACCEPTANCE
-                      </span>
-                    </td>
-                  </tr>
-                ))
+                pendingInvites.map((inv) => {
+                  const isExpired = new Date(inv.expiresAt) < new Date();
+                  return (
+                    <tr key={inv.id}>
+                      <td className="p-4 font-mono text-stone-800">{inv.email}</td>
+                      <td className="p-4 text-stone-500">
+                        {new Date(inv.expiresAt).toLocaleString("en-IN")}
+                      </td>
+                      <td className="p-4 text-right">
+                        {isExpired ? (
+                          <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 text-[10px] font-bold">
+                            EXPIRED
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
+                            PENDING ACCEPTANCE (48H)
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

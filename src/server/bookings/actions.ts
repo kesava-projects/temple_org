@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { getCurrentUser, requireAdmin } from "@/server/auth/guards";
 import { bookingsService, BookingServiceError } from "./bookings.service";
+import { staffService } from "@/server/staff/staff.service";
 import type { BookingCreateInput, PaymentVerifyInput } from "@/schemas/booking";
 
 async function getClientIp(): Promise<string | undefined> {
@@ -94,12 +95,20 @@ export async function verifyPaymentAction(payload: PaymentVerifyInput) {
 /**
  * Server Action: Refund a Paid Booking
  * Security Rule 1: requireAdmin() checked on the server first.
+ * Security Rule 7: TOTP re-authentication before sensitive refund action.
  * Security Rule 9: Logs refund to AuditLog.
  */
-export async function refundBookingAction(bookingId: string, reason: string) {
+export async function refundBookingAction(
+  bookingId: string,
+  reason: string,
+  totpCode?: string
+) {
   try {
     const admin = await requireAdmin(false);
     const ip = await getClientIp();
+
+    // Security Rule 7: Re-authenticate before refunds
+    await staffService.verifyAdminMfa(admin.id, totpCode);
 
     await bookingsService.refundBooking(bookingId, reason, admin, ip);
 
