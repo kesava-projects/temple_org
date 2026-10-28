@@ -1,0 +1,54 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Lint, Typecheck, Unit Tests & Production Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/temple_org?schema=public"
+      BETTER_AUTH_SECRET: "ci-dummy-secret-key-at-least-32-characters-ci-build"
+      BETTER_AUTH_URL: "http://localhost:3000"
+      NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
+      INITIAL_ADMIN_EMAIL: "admin@temple.org"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 12.15.0
+          run_install: false
+
+      - name: Setup Node.js LTS (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client Types
+        run: pnpm db:generate
+
+      - name: Code Quality (ESLint)
+        run: pnpm lint
+
+      - name: Strict TypeScript Typecheck
+        run: pnpm typecheck
+
+      - name: Unit Test Suite (Vitest)
+        run: pnpm test
+
+      - name: Next.js Production Build
+        run: pnpm build

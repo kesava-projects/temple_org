@@ -178,7 +178,24 @@ pnpm typecheck
 
 # Run ESLint check
 pnpm lint
+
+# Run production build test
+pnpm build
 ```
+
+---
+
+## 🚀 Deployment & Operations
+
+For complete step-by-step production setup, domain configuration, and disaster recovery, read the [Production Deployment Guide](DEPLOYMENT.md).
+
+### Quick Summary:
+- **Hosting Target**: Vercel (configuration in `vercel.json`, region `bom1` for Mumbai, India)
+- **CI Pipeline**: Automated GitHub Actions workflow (`.github/workflows/ci.yml`) running lint, typecheck, 59 unit tests, and build on push/PR
+- **Database Migrations**: `npx prisma migrate deploy` followed by `pnpm db:seed`
+- **OAuth Callbacks**: Registered for Google, Facebook, Apple, and Microsoft at `https://<domain>/api/auth/callback/<provider>`
+- **Razorpay Webhooks**: Registered at `https://<domain>/api/webhooks/razorpay` for `order.paid`, `payment.captured`, `payment.failed` with raw HMAC signature verification
+- **Backup & Recovery**: Daily automated PostgreSQL snapshots + WAL archiving for Point-In-Time Recovery (PITR)
 
 ---
 
