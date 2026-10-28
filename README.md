@@ -38,25 +38,32 @@ temple-org/
 │   └── seed.ts               # Database seeder (Initial Admin + Sample Published Event)
 ├── src/
 │   ├── app/
-│   │   ├── (public)/         # Public layout, Homepage, Events, About, Contact, Gallery, Policies
+│   │   ├── (public)/         # Public layout, Homepage, Events, Event Detail (/events/[slug]), About, Contact, Gallery, Policies
 │   │   ├── (auth)/           # Devotee Login (/login), Staff Login (/admin/login), Staff Invite (/invite/[token])
 │   │   ├── account/          # Devotee account layout & bookings (/account/bookings)
 │   │   ├── admin/            # Admin layout (enforces requireAdmin()), Dashboard, Events, Bookings, Staff, Audit Log
 │   │   ├── api/
 │   │   │   └── auth/[...all] # Better Auth Next.js route handler
 │   │   ├── globals.css       # Tailwind v4 styles & temple warm palette
-│   │   └── layout.tsx        # Root HTML layout
+│   │   ├── layout.tsx        # Root HTML layout
+│   │   ├── robots.ts         # Search engine crawler policies
+│   │   └── sitemap.ts        # Dynamic sitemap with static and published event URLs
 │   ├── components/
 │   │   ├── ui/               # shadcn/ui component primitives
-│   │   ├── navbar.tsx        # Public temple navbar
+│   │   ├── navbar.tsx        # Public temple navbar with language switcher & mobile drawer
 │   │   ├── footer.tsx        # Public temple footer
+│   │   ├── mobile-nav.tsx    # Responsive mobile drawer navigation
+│   │   ├── contact-form.tsx  # Devotee inquiry client form
+│   │   ├── json-ld.tsx       # Schema.org structured data (HinduTemple & Event)
+│   │   ├── language-switcher.tsx # English / Telugu i18n switcher
 │   │   ├── admin-nav.tsx     # Admin staff portal sidebar & navigation
 │   │   └── account-nav.tsx   # Devotee account sidebar
 │   ├── lib/
 │   │   ├── auth.ts           # Better Auth server instance & plugins
 │   │   ├── auth-client.ts    # Better Auth client instance
 │   │   ├── prisma.ts         # Prisma Client singleton
-│   │   └── utils.ts          # cn() class utility
+│   │   ├── utils.ts          # cn() class utility
+│   │   └── i18n/             # Internationalization dictionaries & config (EN, TE)
 │   ├── proxy.ts              # Edge route protection & strict security headers (CSP, HSTS, noindex) per Next.js 16 convention
 │   ├── schemas/              # Shared Zod validation schemas
 │   │   ├── auth.ts           # Login, OTP, and staff invite schemas
@@ -76,8 +83,11 @@ temple-org/
     └── unit/
         ├── events.service.test.ts # Event service, Zod validation, paise prices & audit tests
         ├── guards.test.ts    # Auth guard tests
+        ├── i18n.test.ts      # Dictionary completeness and fallback tests
+        ├── public-events.test.ts # Devotee query filtering (PUBLISHED only) tests
         ├── roles.test.ts     # Role boundary tests
-        └── schemas.test.ts   # Zod schema validation tests
+        ├── schemas.test.ts   # Zod schema validation tests
+        └── sitemap.test.ts   # Sitemap generation tests
 ```
 
 ---

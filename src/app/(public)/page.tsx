@@ -1,7 +1,15 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
+import { TempleOrganizationJsonLd } from "@/components/json-ld";
 import { Calendar, Clock, MapPin, Sparkles, ArrowRight, ShieldCheck } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Sri Venkateswara Temple | Sacred Sanctuary of Sanatana Dharma",
+  description:
+    "Experience the divine grace of Lord Venkateswara. Daily Vaikhanasa Agama darshan, festive pujas, authentic Vedic rituals, and community Annadanam.",
+};
 
 export default async function HomePage() {
   // Query published events from database
@@ -39,6 +47,7 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-16 py-8 md:py-12">
+      <TempleOrganizationJsonLd />
       {/* Hero Section */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-900 via-amber-800 to-stone-900 px-6 py-20 text-white shadow-xl sm:px-12 sm:py-28 lg:px-16">

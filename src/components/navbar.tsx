@@ -2,10 +2,13 @@ import Link from "next/link";
 import { getCurrentUser } from "@/server/auth/guards";
 import { Button } from "@/components/ui/button";
 import { ROLES } from "@/server/auth/roles";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { MobileNav } from "@/components/mobile-nav";
 import { Calendar, Heart, Shield, User as UserIcon } from "lucide-react";
 
 export async function Navbar() {
   const user = await getCurrentUser();
+  const isAdmin = user?.role === ROLES.ADMIN;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-amber-900/10 bg-amber-50/80 backdrop-blur-md dark:border-amber-500/10 dark:bg-stone-950/80">
@@ -13,7 +16,6 @@ export async function Navbar() {
         {/* Temple Brand / Logo */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-400 text-white shadow-md shadow-amber-600/20 group-hover:scale-105 transition-transform">
-            {/* Sacred Diya / Flame Icon */}
             <span className="text-xl font-serif">ॐ</span>
           </div>
           <div className="flex flex-col">
@@ -55,11 +57,13 @@ export async function Navbar() {
           </Link>
         </nav>
 
-        {/* User / Devotee Action */}
-        <div className="flex items-center gap-3">
+        {/* Desktop Right Actions */}
+        <div className="hidden md:flex items-center gap-3">
+          <LanguageSwitcher />
+
           {user ? (
             <div className="flex items-center gap-2">
-              {user.role === ROLES.ADMIN ? (
+              {isAdmin && (
                 <Link href="/admin">
                   <Button
                     variant="outline"
@@ -70,7 +74,7 @@ export async function Navbar() {
                     Admin Portal
                   </Button>
                 </Link>
-              ) : null}
+              )}
 
               <Link href="/account/bookings">
                 <Button
@@ -105,6 +109,9 @@ export async function Navbar() {
             </div>
           )}
         </div>
+
+        {/* Mobile Navigation Drawer Toggle */}
+        <MobileNav userEmail={user?.email} isAdmin={isAdmin} />
       </div>
     </header>
   );
