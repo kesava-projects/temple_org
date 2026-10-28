@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, MapPin, Receipt, User, Mail, Phone } from "lucide-react";
+import { PrintReceiptButton } from "@/components/print-receipt-button";
 
 interface BookingDetailPageProps {
   params: Promise<{ id: string }>;
@@ -59,17 +60,20 @@ export default async function DevoteeBookingDetailPage({
           </div>
         </div>
 
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-bold ${
-            booking.status === "PAID"
-              ? "bg-emerald-100 text-emerald-800"
-              : booking.status === "PENDING"
-                ? "bg-amber-100 text-amber-800"
-                : "bg-stone-100 text-stone-600"
-          }`}
-        >
-          {booking.status}
-        </span>
+        <div className="flex items-center gap-2">
+          <PrintReceiptButton />
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-bold ${
+              booking.status === "PAID"
+                ? "bg-emerald-100 text-emerald-800"
+                : booking.status === "PENDING"
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-stone-100 text-stone-600"
+            }`}
+          >
+            {booking.status}
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
