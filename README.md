@@ -65,10 +65,16 @@ temple-org/
 │       ├── auth/
 │       │   ├── guards.ts     # requireAdmin(), requireUser(), getCurrentUser()
 │       │   └── roles.ts      # ROLES constants & helpers (USER, ADMIN)
-│       └── audit/
-│           └── audit-logger.ts # Append-only AuditLog service
+│       ├── audit/
+│       │   └── audit-logger.ts # Append-only AuditLog service
+│       ├── events/
+│       │   ├── events.service.ts # Core Event & Schedule business logic with soft-delete
+│       │   └── actions.ts    # Server actions for event CRUD, schedule toggles & image upload
+│       └── media/
+│           └── cloudinary.ts # Cloudinary upload & management service
 └── tests/
     └── unit/
+        ├── events.service.test.ts # Event service, Zod validation, paise prices & audit tests
         ├── guards.test.ts    # Auth guard tests
         ├── roles.test.ts     # Role boundary tests
         └── schemas.test.ts   # Zod schema validation tests
@@ -131,5 +137,7 @@ pnpm lint
 1. **`requireAdmin()` Server Guard**: Every admin layout, page, and mutation calls `requireAdmin()` on the server first.
 2. **Deactivation Invalidation**: Direct DB checks ensure deactivating an admin terminates their access immediately.
 3. **No Indexing on Admin**: Middleware injects `X-Robots-Tag: noindex, nofollow` on all `/admin` routes.
-4. **Append-Only Audit Log**: Every administrative action, seed event, and role modification is logged to `AuditLog`.
+4. **Append-Only Audit Log**: Every administrative action, seed event, event creation, update, and archive is logged to `AuditLog`.
 5. **Strict Money Handling**: All amounts are strictly modeled as integers in **paise** to eliminate floating point inaccuracies.
+6. **Soft Delete / Archiving**: Events are never hard-deleted (Security Rule 6); archiving marks status as `ARCHIVED` and disables bookings on all associated schedules.
+7. **Cloudinary Integration**: Signed media uploads with type verification and size boundaries.
