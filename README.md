@@ -57,7 +57,7 @@ temple-org/
 │   │   ├── auth-client.ts    # Better Auth client instance
 │   │   ├── prisma.ts         # Prisma Client singleton
 │   │   └── utils.ts          # cn() class utility
-│   ├── middleware.ts         # Edge route protection & strict security headers (CSP, HSTS, noindex)
+│   ├── proxy.ts              # Edge route protection & strict security headers (CSP, HSTS, noindex) per Next.js 16 convention
 │   ├── schemas/              # Shared Zod validation schemas
 │   │   ├── auth.ts           # Login, OTP, and staff invite schemas
 │   │   └── event.ts          # Event & Schedule creation/update schemas
